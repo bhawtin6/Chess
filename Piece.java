@@ -6,13 +6,11 @@ import static java.lang.Character.isLowerCase;
 public class Piece {
     char colour; //'b' or 'w'
     char type; //rnbqkpx
-    boolean highlighted;
     int turnLastMoved; //last turn that this piece has moved
     ImageView icon;
 
     public Piece(char ch){
         turnLastMoved = -1;
-        highlighted = false;
         int row;
         int col;
         if (isLowerCase(ch)){

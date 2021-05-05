@@ -1,7 +1,10 @@
 import javafx.application.Application;
+import javafx.event.Event;
 import javafx.event.EventHandler;
+import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.TilePane;
 import javafx.scene.paint.Color;
@@ -11,34 +14,24 @@ import javafx.stage.Stage;
 
 public class Main extends Application {
 
-    Piece curPiece; //holds currently selected piece, so that we know to deselect it when a new one is clicked
+    TilePane piecesPane;
+    Pane hoverPane, coverPane;
+    Piece hoverPiece;
+    double hoverX, hoverY;
+    boolean highlightedSquares[][];
+    Piece[][] pieces;
 
     public void start(Stage primaryStage){
 
-        curPiece = null;
-        Piece hoverPiece = new Piece('x');
+        hoverPiece = null;
         String fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-        Piece[][] pieces = parseFEN(fen); //rank-file
-        boolean highlightedSquares[][];
-        //Piece curPiece; //holds currently selected piece, so that we know to deselect it when a new one is clicked
-
-        EventHandler<MouseEvent> clickHandler = e -> {
-            int mouseX = (int)Math.floor(e.getX());
-            int mouseY = (int)Math.floor(e.getY());
-            int rank = mouseY/100;
-            int file = mouseX/100;
-            System.out.printf("clicked %c on rank %d, file %d\n", pieces[rank][file].type, rank, file);
-            if (curPiece != null) curPiece.highlighted = false;
-            if (curPiece != pieces[rank][file]){
-                curPiece = pieces[rank][file];
-                if (curPiece.type != 'x') curPiece.highlighted = true;
-            }
-
-        };
-
+        pieces = parseFEN(fen); //rank-file
+        hoverPane = new Pane();
+        piecesPane = new TilePane();
+        coverPane = new Pane();
         
         //drawing the board
-        TilePane piecesPane = new TilePane();
+
         piecesPane.setPrefColumns(8);
         piecesPane.setPrefRows(8);
         piecesPane.setPrefTileHeight(100);
@@ -48,8 +41,6 @@ public class Main extends Application {
                 piecesPane.getChildren().add(pieces[i][j].icon);
             }
         }
-
-
 
         //highlightedSquares = getHighlightedSquares(hoverPiece, pieces);
         TilePane board = new TilePane();
@@ -67,15 +58,79 @@ public class Main extends Application {
             board.getChildren().add(new Rectangle(100,100,c));
         }
         StackPane root = new StackPane();
-        root.getChildren().addAll(board, piecesPane);
-        root.addEventHandler(MouseEvent.MOUSE_CLICKED, clickHandler);
-//        root.setOnMousePressed(e -> {
-//
-//        });
+        root.getChildren().addAll(board, piecesPane, hoverPane);
+
+        root.setOnMousePressed(e -> {
+            int mouseX = (int) (e.getX());
+            int mouseY = (int) (e.getY());
+            int rank = mouseY / 100;
+            int file = mouseX / 100;
+            System.out.printf("clicked %c on rank %d, file %d\n", pieces[rank][file].type, rank, file);
+            if (pieces[rank][file].type == 'x') return;
+            hoverPiece = new Piece(pieces[rank][file].type);
+            hoverX = e.getX()-50;
+            hoverY = e.getY()-50;
+            hoverPane = new Pane();
+            hoverPane.setTranslateX(hoverX);
+            hoverPane.setTranslateY(hoverY);
+            hoverPane.getChildren().add(hoverPiece.icon);
+
+
+            //redraw board
+            pieces[rank][file] = new Piece('x');
+            coverPane = new Pane();
+            coverPane.setTranslateX(100*file);
+            coverPane.setTranslateY(100*rank);
+            if ((rank+file)%2==0) coverPane.getChildren().add(new Rectangle(100,100, Color.ALICEBLUE));
+            else coverPane.getChildren().add(new Rectangle(100,100, Color.CADETBLUE));
+            root.getChildren().add(coverPane);
+            root.getChildren().remove(hoverPane);
+            root.getChildren().add(hoverPane);
+        });
+
+        root.setOnMouseDragged(e -> {
+            if (hoverPiece == null) {
+                System.out.println("Null Drag");
+                return;
+            }
+            hoverX = (int)e.getX()-50 ;
+            hoverY = (int)e.getY()-50;
+            hoverPane = new Pane();
+            System.out.printf("dragging... X: %f, Y:%f\r", hoverX, hoverY);
+            hoverPane.setTranslateX(hoverX);
+            hoverPane.setTranslateY(hoverY);
+            hoverPane.getChildren().add(hoverPiece.icon);
+            root.getChildren().remove(hoverPane);
+            root.getChildren().add(hoverPane);
+
+        });
+
+        root.setOnMouseReleased(e -> {
+            if (hoverPiece == null) return;
+            int mouseX = (int) (e.getX());
+            int mouseY = (int) (e.getY());
+            int rank = mouseY / 100;
+            int file = mouseX / 100;
+            pieces[rank][file] = hoverPiece;
+            hoverPiece = null;
+            root.getChildren().remove(piecesPane);
+            piecesPane = new TilePane();
+            for (int i = 0 ; i <8; i++){
+                for (int j = 0; j <8 ; j++){
+                    piecesPane.getChildren().add(pieces[i][j].icon);
+                }
+            }
+            root.getChildren().add(piecesPane);
+            root.getChildren().remove(hoverPane);
+            root.getChildren().add(hoverPane);
+
+        });
+
 
 
         Scene scene = new Scene(root);
         primaryStage.setTitle("Chess");
+        primaryStage.setResizable(false);
         primaryStage.setScene(scene);
         primaryStage.show();
     }
