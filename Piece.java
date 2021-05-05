@@ -24,36 +24,29 @@ public class Piece {
         switch (ch){
             case 'r':
             case 'R':
-                System.out.printf("ch = %c, making a rook\n", ch);
                 col = 0;
                 break;
             case 'n':
             case 'N':
-                System.out.printf("ch = %c, making a knight\n", ch);
                 col = 1;
                 break;
             case 'b':
             case 'B':
-                System.out.printf("ch = %c, making a bishop\n", ch);
                 col = 2;
                 break;
             case 'q':
             case 'Q':
-                System.out.printf("ch = %c, making a queen\n", ch);
                 col = 3;
                 break;
             case 'k':
             case 'K':
-                System.out.printf("ch = %c, making a king\n", ch);
                 col = 4;
                 break;
             case 'p':
             case 'P':
-                System.out.printf("ch = %c, making a pawn\n", ch);
                 col = 5;
                 break;
             default:
-                System.out.printf("ch = %c, making a blank space\n", ch);
                 col = 6;//blank
         }
         icon = new ImageView(new Image("chesspieces.png"));
