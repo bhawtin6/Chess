@@ -5,12 +5,14 @@ import static java.lang.Character.isLowerCase;
 
 public class Piece {
     char colour; //'b' or 'w'
+    char type; //rnbqkpx
+    boolean highlighted;
     int turnLastMoved; //last turn that this piece has moved
-    ImageView icon; //rnbqk
+    ImageView icon;
 
     public Piece(char ch){
         turnLastMoved = -1;
-
+        highlighted = false;
         int row;
         int col;
         if (isLowerCase(ch)){
@@ -62,8 +64,10 @@ public class Piece {
         icon.setFitWidth(100);
         if ( col == 6){
             icon.setViewport(new Rectangle2D(0,0,1,1));
+            type = 'x';
             return;
         }
+        type = ch;
         icon.setViewport(new Rectangle2D(col*132,row*132,132,132));
     }
 

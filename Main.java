@@ -1,8 +1,7 @@
 import javafx.application.Application;
-import javafx.geometry.Rectangle2D;
+import javafx.event.EventHandler;
 import javafx.scene.Scene;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.TilePane;
 import javafx.scene.paint.Color;
@@ -12,28 +11,47 @@ import javafx.stage.Stage;
 
 public class Main extends Application {
 
+    Piece curPiece; //holds currently selected piece, so that we know to deselect it when a new one is clicked
+
     public void start(Stage primaryStage){
 
-        Image piecesImage = new Image("chesspieces.png");
-
+        curPiece = null;
+        Piece hoverPiece = new Piece('x');
         String fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-        Piece[][] pieces = parseFEN(fen);
+        Piece[][] pieces = parseFEN(fen); //rank-file
+        boolean highlightedSquares[][];
+        //Piece curPiece; //holds currently selected piece, so that we know to deselect it when a new one is clicked
 
+        EventHandler<MouseEvent> clickHandler = e -> {
+            int mouseX = (int)Math.floor(e.getX());
+            int mouseY = (int)Math.floor(e.getY());
+            int rank = mouseY/100;
+            int file = mouseX/100;
+            System.out.printf("clicked %c on rank %d, file %d\n", pieces[rank][file].type, rank, file);
+            if (curPiece != null) curPiece.highlighted = false;
+            if (curPiece != pieces[rank][file]){
+                curPiece = pieces[rank][file];
+                if (curPiece.type != 'x') curPiece.highlighted = true;
+            }
 
+        };
 
+        
         //drawing the board
         TilePane piecesPane = new TilePane();
         piecesPane.setPrefColumns(8);
         piecesPane.setPrefRows(8);
         piecesPane.setPrefTileHeight(100);
         piecesPane.setPrefTileWidth(100);
-
         for (int i = 0 ; i <8; i++){
             for (int j = 0; j <8 ; j++){
                 piecesPane.getChildren().add(pieces[i][j].icon);
             }
         }
 
+
+
+        //highlightedSquares = getHighlightedSquares(hoverPiece, pieces);
         TilePane board = new TilePane();
         board.setPrefColumns(8);
         board.setPrefRows(8);
@@ -50,6 +68,12 @@ public class Main extends Application {
         }
         StackPane root = new StackPane();
         root.getChildren().addAll(board, piecesPane);
+        root.addEventHandler(MouseEvent.MOUSE_CLICKED, clickHandler);
+//        root.setOnMousePressed(e -> {
+//
+//        });
+
+
         Scene scene = new Scene(root);
         primaryStage.setTitle("Chess");
         primaryStage.setScene(scene);
@@ -88,5 +112,8 @@ public class Main extends Application {
         }
         return pieces;
     }
+
+
+
 
 }
