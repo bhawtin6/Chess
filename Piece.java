@@ -61,6 +61,9 @@ public class Piece {
         type = ch;
         icon.setViewport(new Rectangle2D(col*132,row*132,132,132));
     }
+    public String toString(){
+        return String.format("type: %c, colour: %c, turnLastMoved: %d\n",this.type, this.colour, this.turnLastMoved);
+    }
 
 
 }

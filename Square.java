@@ -5,7 +5,7 @@ public class Square {
     public int file;
     public Piece piece;
     public boolean highlighted;
-    Color colour;
+    Color colour; //backing colour of the square
 
     public Square(int r, int f){
         rank = r;
@@ -33,5 +33,8 @@ public class Square {
         highlighted = !highlighted;
         updateColour();
         return this.colour;
+    }
+    public boolean isEmpty(){
+        return (this.piece.type == 'x');
     }
 }
