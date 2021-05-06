@@ -28,7 +28,7 @@ public class Square {
         if ((rank+file)%2 == 0 ) colour = Color.ALICEBLUE;
         else colour = Color.CADETBLUE;
         if (highlighted){
-            colour = colour.darker();
+            colour = colour.darker().darker();
         }
         return this.colour;
     }

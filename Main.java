@@ -104,30 +104,42 @@ public class Main extends Application {
     }
 
     private void handleMouseUp(MouseEvent e) {
+
         if (hoverSquare == null) return;
-        root.getChildren().remove(coverPane);
+        //root.getChildren().remove(coverPane);
+
         int mouseX = (int) (e.getX());
         int mouseY = (int) (e.getY());
         int rank = mouseY / 100;
         int file = mouseX / 100;
-        square[rank][file] = hoverSquare;
-        if (rank != lastSquare.rank || file != lastSquare.file) {
+
+        boolean valid = false;
+        if (square[rank][file].highlighted) valid = true;
+        getMoves(lastSquare); //toggles highlights
+
+        if (valid){
+            square[lastSquare.rank][lastSquare.file] = new Square(rank, file, new Piece('x'), false);
+            square[rank][file] = hoverSquare;
+        }
+
+        if ((rank != lastSquare.rank || file != lastSquare.file) && valid) { //if the piece was moved, then
             square[rank][file].piece.turnLastMoved = numMoves;
             square[rank][file].rank = rank;
             square[rank][file].file = file;
-            square[rank][file].updateColour();
+            //square[rank][file].toggleHighlight();
             numMoves ++;
         }
 
-        coverPane = new Pane();
-        coverPane.setTranslateX(100*file);
-        coverPane.setTranslateY(100*rank);
-        System.out.printf("%d %d\n", rank, file);
-        coverPane.getChildren().add(new Rectangle(100,100, square[rank][file].colour));
-        root.getChildren().add(coverPane);
+        //System.out.printf("%d %d\n", rank, file);
+//        coverPane = new Pane();
+//        coverPane.setTranslateX(100*file);
+//        coverPane.setTranslateY(100*rank);
+//        coverPane.getChildren().add(new Rectangle(100,100, square[rank][file].colour.darker().darker()));
+//        root.getChildren().add(coverPane);
 
         hoverSquare = null;
         root.getChildren().remove(piecesPane);
+        root.getChildren().remove(hoverPane);
         piecesPane = new TilePane();
         for (int i = 0 ; i <8; i++){
             for (int j = 0; j <8 ; j++){
@@ -135,12 +147,16 @@ public class Main extends Application {
             }
         }
 
-        root.getChildren().add(piecesPane);
-        root.getChildren().remove(hoverPane);
-        root.getChildren().add(hoverPane);
-        getMoves(lastSquare);
+
         root.getChildren().add(movePane);
+        root.getChildren().add(piecesPane);
+
+        //root.getChildren().add(hoverPane);
+
         updateStats();
+
+
+
     }
 
     private void handleMouseDrag(MouseEvent e) {
@@ -149,12 +165,12 @@ public class Main extends Application {
         }
         hoverX = (int)e.getX()-50 ;
         hoverY = (int)e.getY()-50;
-        hoverPane = new Pane();
+        //hoverPane = new Pane();
         hoverPane.setTranslateX(hoverX);
         hoverPane.setTranslateY(hoverY);
-        hoverPane.getChildren().add(hoverSquare.piece.icon);
-        root.getChildren().remove(hoverPane);
-        root.getChildren().add(hoverPane);
+        //hoverPane.getChildren().add(hoverSquare.piece.icon);
+        //root.getChildren().remove(hoverPane);
+        //root.getChildren().add(hoverPane);
     }
 
     private void handleMouseDown(MouseEvent e) {
@@ -165,6 +181,7 @@ public class Main extends Application {
         if (square[rank][file].piece.type == 'x') return;
         if (square[rank][file].piece.colour == 'b' && numMoves%2==0) return;
         if (square[rank][file].piece.colour == 'w' && numMoves%2==1) return;
+
         lastSquare = square[rank][file];
         getMoves(lastSquare);
         hoverSquare = new Square(rank, file, new Piece(square[rank][file].piece.type),false);
@@ -175,15 +192,18 @@ public class Main extends Application {
         hoverPane.setTranslateY(hoverY);
         hoverPane.getChildren().add(hoverSquare.piece.icon);
 
-        square[rank][file] = new Square(rank, file, new Piece('x'), true);
+
         coverPane = new Pane();
         coverPane.setTranslateX(100*file);
         coverPane.setTranslateY(100*rank);
         coverPane.getChildren().add(new Rectangle(100,100, square[rank][file].colour));
         root.getChildren().add(coverPane);
         root.getChildren().remove(hoverPane);
-        root.getChildren().add(hoverPane);
         root.getChildren().add(movePane);
+        root.getChildren().add(hoverPane);
+
+
+
     }
 
     private void initialize() {
@@ -265,7 +285,12 @@ public class Main extends Application {
         Piece piece = s.piece;
         int rank = s.rank;
         int file = s.file;
-        int lastMoved = piece.turnLastMoved;
+
+        square[rank][file].toggleHighlight();
+        Rectangle tempx = new Rectangle(100,100,square[rank][file].colour);
+        tempx.setTranslateX(100*file);
+        tempx.setTranslateY(100*(rank));
+        movePane.getChildren().add(tempx);
 
         if (piece.type == 'p' || piece.type == 'P'){
             int dir = 1;
@@ -278,6 +303,25 @@ public class Main extends Application {
                     temp.setTranslateY(100*(rank+dir));
                     movePane.getChildren().add(temp);
                 }
+                if (file < 7){
+                    if (!square[rank+dir][file+1].isEmpty() && square[rank+dir][file+1].piece.colour!=square[rank][file].piece.colour){
+                        square[rank+dir][file+1].toggleHighlight();
+                        StackPane temp = square[rank+dir][file+1].makeStackPane();
+                        temp.setTranslateX(100*(file+1));
+                        temp.setTranslateY(100*(rank+dir));
+                        movePane.getChildren().add(temp);
+                    }
+                }
+                if (file > 0){
+                    if (!square[rank+dir][file-1].isEmpty() && square[rank+dir][file-1].piece.colour!=square[rank][file].piece.colour){
+                        square[rank+dir][file-1].toggleHighlight();
+                        StackPane temp = square[rank+dir][file-1].makeStackPane();
+                        temp.setTranslateX(100*(file-1));
+                        temp.setTranslateY(100*(rank+dir));
+                        movePane.getChildren().add(temp);
+                    }
+                }
+
                 if (((rank>1 && piece.colour == 'w') || (rank < 6 && piece.colour == 'b')) && (piece.turnLastMoved == -1 || piece.turnLastMoved == numMoves)){
                     if (square[rank+2*dir][file].isEmpty()){
                         square[rank+2*dir][file].toggleHighlight();
