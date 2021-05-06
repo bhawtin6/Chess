@@ -5,7 +5,6 @@ import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.*;
-import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
@@ -13,7 +12,7 @@ import javafx.stage.Stage;
 
 public class Main extends Application {
 
-    TilePane piecesPane;
+    TilePane piecesPane, board;
     BorderPane base;
     StackPane root;
     Pane hoverPane, movePane, coverPane;
@@ -32,12 +31,9 @@ public class Main extends Application {
 
     String fen;
 
-
     public void start(Stage primaryStage){
-
         initialize();
         setEventHandlers();
-
         scene = new Scene(base);
         primaryStage.setTitle("Chess");
         primaryStage.setResizable(false);
@@ -48,65 +44,18 @@ public class Main extends Application {
 
     private void setEventHandlers() {
         root.setOnMousePressed(this::handleMouseDown);
-
         root.setOnMouseDragged(this::handleMouseDrag);
-
         root.setOnMouseReleased(this::handleMouseUp);
-
         root.setOnKeyPressed(e-> reset());
     }
 
     private void reset() {
-        /*fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-        square = parseFEN(fen); //rank-file
-        hoverSquare = null;
-        hoverPane.getChildren().clear();
-        hoverPane = new Pane();
-        piecesPane.getChildren().clear();
-        piecesPane = new TilePane();
-        coverPane.getChildren().clear();
-        coverPane = new Pane();
-        numMoves = 0;
-        piecesPane.setPrefColumns(8);
-        piecesPane.setPrefRows(8);
-        piecesPane.setPrefTileHeight(100);
-        piecesPane.setPrefTileWidth(100);
-        for (int i = 0 ; i <8; i++){
-            for (int j = 0; j <8 ; j++){
-                piecesPane.getChildren().add(square[i][j].piece.icon);
-            }
-        }
 
-        TilePane board = new TilePane();
-        board.setPrefColumns(8);
-        board.setPrefRows(8);
-        board.setPrefTileHeight(100);
-        board.setPrefTileWidth(100);
-        for (int i = 0 ; i <8; i++){
-            for (int j = 0; j <8 ; j++){
-                board.getChildren().add(new Rectangle(100,100,square[i][j].colour));
-            }
-        }
-
-        root = new StackPane();
-        root.setMaxSize(800,800);
-        root.getChildren().addAll(board, piecesPane);
-        setEventHandlers();
-
-        base = new BorderPane();
-        base.setStyle("-fx-background-color: #AAAAAA");
-        base.setCenter(root);
-        base.setPadding(new Insets(15));
-
-        updateStats();
-
-        scene = new Scene(base);*/
     }
 
     private void handleMouseUp(MouseEvent e) {
 
         if (hoverSquare == null) return;
-        //root.getChildren().remove(coverPane);
 
         int mouseX = (int) (e.getX());
         int mouseY = (int) (e.getY());
@@ -126,16 +75,8 @@ public class Main extends Application {
             square[rank][file].piece.turnLastMoved = numMoves;
             square[rank][file].rank = rank;
             square[rank][file].file = file;
-            //square[rank][file].toggleHighlight();
             numMoves ++;
         }
-
-        //System.out.printf("%d %d\n", rank, file);
-//        coverPane = new Pane();
-//        coverPane.setTranslateX(100*file);
-//        coverPane.setTranslateY(100*rank);
-//        coverPane.getChildren().add(new Rectangle(100,100, square[rank][file].colour.darker().darker()));
-//        root.getChildren().add(coverPane);
 
         hoverSquare = null;
         root.getChildren().remove(piecesPane);
@@ -144,18 +85,13 @@ public class Main extends Application {
         for (int i = 0 ; i <8; i++){
             for (int j = 0; j <8 ; j++){
                 piecesPane.getChildren().add(square[i][j].piece.icon);
+                square[i][j].updateColour();
             }
         }
 
-
         root.getChildren().add(movePane);
         root.getChildren().add(piecesPane);
-
-        //root.getChildren().add(hoverPane);
-
         updateStats();
-
-
 
     }
 
@@ -165,12 +101,8 @@ public class Main extends Application {
         }
         hoverX = (int)e.getX()-50 ;
         hoverY = (int)e.getY()-50;
-        //hoverPane = new Pane();
         hoverPane.setTranslateX(hoverX);
         hoverPane.setTranslateY(hoverY);
-        //hoverPane.getChildren().add(hoverSquare.piece.icon);
-        //root.getChildren().remove(hoverPane);
-        //root.getChildren().add(hoverPane);
     }
 
     private void handleMouseDown(MouseEvent e) {
@@ -184,6 +116,7 @@ public class Main extends Application {
 
         lastSquare = square[rank][file];
         getMoves(lastSquare);
+
         hoverSquare = new Square(rank, file, new Piece(square[rank][file].piece.type),false);
         hoverX = e.getX()-50;
         hoverY = e.getY()-50;
@@ -191,60 +124,25 @@ public class Main extends Application {
         hoverPane.setTranslateX(hoverX);
         hoverPane.setTranslateY(hoverY);
         hoverPane.getChildren().add(hoverSquare.piece.icon);
-
-
-        coverPane = new Pane();
-        coverPane.setTranslateX(100*file);
-        coverPane.setTranslateY(100*rank);
-        coverPane.getChildren().add(new Rectangle(100,100, square[rank][file].colour));
-        root.getChildren().add(coverPane);
-        root.getChildren().remove(hoverPane);
+        root.getChildren().remove(movePane);
         root.getChildren().add(movePane);
+        root.getChildren().remove(hoverPane);
         root.getChildren().add(hoverPane);
-
-
 
     }
 
     private void initialize() {
-        fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+        //fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+        fen = "8/8/8/3bB3/8/8/8/8 u ";
         square = parseFEN(fen); //rank-file
         hoverSquare = null;
         hoverPane = new Pane();
         piecesPane = new TilePane();
         coverPane = new Pane();
         numMoves = 0;
-        piecesPane.setPrefColumns(8);
-        piecesPane.setPrefRows(8);
-        piecesPane.setPrefTileHeight(100);
-        piecesPane.setPrefTileWidth(100);
-        for (int i = 0 ; i <8; i++){
-            for (int j = 0; j <8 ; j++){
-                piecesPane.getChildren().add(square[i][j].piece.icon);
-            }
-        }
 
-        TilePane board = new TilePane();
-        board.setPrefColumns(8);
-        board.setPrefRows(8);
-        board.setPrefTileHeight(100);
-        board.setPrefTileWidth(100);
-        for (int i = 0 ; i <8; i++){
-            for (int j = 0; j <8 ; j++){
-                board.getChildren().add(new Rectangle(100,100,square[i][j].colour));
-            }
-        }
+        redraw();
 
-        root = new StackPane();
-        root.setMaxSize(800,800);
-        root.getChildren().addAll(board, piecesPane, hoverPane);
-
-        base = new BorderPane();
-        base.setStyle("-fx-background-color: #AAAAAA");
-        base.setCenter(root);
-        base.setPadding(new Insets(15));
-
-        updateStats();
     }
 
     public static Square[][] parseFEN(String fen){
@@ -335,6 +233,92 @@ public class Main extends Application {
 
         }
 
+        else if (piece.type == 'b' || piece.type == 'B'){
+
+            int iter;
+            int rnk;
+            int fle;
+
+            iter = 1;
+            rnk = rank - iter;
+            fle = file - iter;
+            System.out.println("\n");
+            while (rnk <8 && rnk > -1 && fle <8 && fle > -1){
+                System.out.printf("%d %d -> ", rnk, fle);
+                if (!square[rnk][fle].isEmpty() && square[rnk][fle].piece.colour == piece.colour) break;
+
+                square[rnk][fle].toggleHighlight();
+                StackPane temp = square[rnk][fle].makeStackPane();
+                temp.setTranslateX(100*fle);
+                temp.setTranslateY(100*rnk);
+                movePane.getChildren().add(temp);
+
+                if (!square[rnk][fle].isEmpty()) break;
+
+                iter ++;
+                rnk = rank - iter;
+                fle = file - iter;
+                System.out.printf("%d %d\n", rnk, fle);
+            }
+            iter = 1;
+            rnk = rank - iter;
+            fle = file + iter;
+            while (rnk <8 && rnk > -1 && fle <8 && fle > -1){
+                System.out.printf("%d %d -> ", rnk, fle);
+                if (!square[rnk][fle].isEmpty() && square[rnk][fle].piece.colour == piece.colour) break;
+
+                square[rnk][fle].toggleHighlight();
+                StackPane temp = square[rnk][fle].makeStackPane();
+                temp.setTranslateX(100*fle);
+                temp.setTranslateY(100*rnk);
+                movePane.getChildren().add(temp);
+
+                if (!square[rnk][fle].isEmpty()) break;
+                iter ++;
+                rnk = rank - iter;
+                fle = file + iter;
+                System.out.printf("%d %d\n", rnk, fle);
+            }
+
+            iter = 1;
+            rnk = rank + iter;
+            fle = file + iter;
+            while (rnk <8 && rnk > -1 && fle <8 && fle > -1){
+
+                if (!square[rnk][fle].isEmpty() && square[rnk][fle].piece.colour == piece.colour) break;
+
+                square[rnk][fle].toggleHighlight();
+                StackPane temp = square[rnk][fle].makeStackPane();
+                temp.setTranslateX(100*fle);
+                temp.setTranslateY(100*rnk);
+                movePane.getChildren().add(temp);
+
+                if (!square[rnk][fle].isEmpty()) break;
+                iter ++;
+                rnk = rank + iter;
+                fle = file + iter;
+            }
+            iter = 1;
+            rnk = rank + iter;
+            fle = file - iter;
+            while (rnk <8 && rnk > -1 && fle <8 && fle > -1){
+
+                if (!square[rnk][fle].isEmpty() && square[rnk][fle].piece.colour == piece.colour) break;
+
+                square[rnk][fle].toggleHighlight();
+                StackPane temp = square[rnk][fle].makeStackPane();
+                temp.setTranslateX(100*fle);
+                temp.setTranslateY(100*rnk);
+                movePane.getChildren().add(temp);
+
+                if (!square[rnk][fle].isEmpty()) break;
+                iter ++;
+                rnk = rank + iter;
+                fle = file - iter;
+            }
+
+        }
+
     }
     public void updateStats(){
         statsPanel = new HBox();
@@ -352,6 +336,46 @@ public class Main extends Application {
         statsPanel.setAlignment(Pos.CENTER);
         base.getChildren().removeAll();
         base.setBottom(statsPanel);
+    }
+
+    public void redraw(){
+        makePieces();
+        makeBoard();
+        root = new StackPane();
+        root.setMaxSize(800,800);
+        root.getChildren().addAll(board, piecesPane, hoverPane);
+
+        base = new BorderPane();
+        base.setStyle("-fx-background-color: #AAAAAA");
+        base.setCenter(root);
+        base.setPadding(new Insets(15));
+
+        updateStats();
+    }
+
+    public void makeBoard(){
+        board = new TilePane();
+        board.setPrefColumns(8);
+        board.setPrefRows(8);
+        board.setPrefTileHeight(100);
+        board.setPrefTileWidth(100);
+        for (int i = 0 ; i <8; i++){
+            for (int j = 0; j <8 ; j++){
+                board.getChildren().add(new Rectangle(100,100,square[i][j].colour));
+            }
+        }
+    }
+
+    public void makePieces(){
+        piecesPane.setPrefColumns(8);
+        piecesPane.setPrefRows(8);
+        piecesPane.setPrefTileHeight(100);
+        piecesPane.setPrefTileWidth(100);
+        for (int i = 0 ; i <8; i++){
+            for (int j = 0; j <8 ; j++){
+                piecesPane.getChildren().add(square[i][j].piece.icon);
+            }
+        }
     }
 
     public static void main(String[] args) {
