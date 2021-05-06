@@ -5,6 +5,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
@@ -14,8 +15,8 @@ public class Main extends Application {
 
     TilePane piecesPane;
     BorderPane base;
-    StackPane root, movePane;
-    Pane hoverPane, coverPane;
+    StackPane root;
+    Pane hoverPane, movePane, coverPane;
     Scene scene;
 
     Square hoverSquare;
@@ -52,9 +53,7 @@ public class Main extends Application {
 
         root.setOnMouseReleased(this::handleMouseUp);
 
-        root.setOnKeyPressed(e->{
-            reset();
-        });
+        root.setOnKeyPressed(e-> reset());
     }
 
     private void reset() {
@@ -116,8 +115,17 @@ public class Main extends Application {
             square[rank][file].piece.turnLastMoved = numMoves;
             square[rank][file].rank = rank;
             square[rank][file].file = file;
+            square[rank][file].updateColour();
             numMoves ++;
         }
+
+        coverPane = new Pane();
+        coverPane.setTranslateX(100*file);
+        coverPane.setTranslateY(100*rank);
+        System.out.printf("%d %d\n", rank, file);
+        coverPane.getChildren().add(new Rectangle(100,100, square[rank][file].colour));
+        root.getChildren().add(coverPane);
+
         hoverSquare = null;
         root.getChildren().remove(piecesPane);
         piecesPane = new TilePane();
@@ -126,9 +134,12 @@ public class Main extends Application {
                 piecesPane.getChildren().add(square[i][j].piece.icon);
             }
         }
+
         root.getChildren().add(piecesPane);
         root.getChildren().remove(hoverPane);
         root.getChildren().add(hoverPane);
+        getMoves(lastSquare);
+        root.getChildren().add(movePane);
         updateStats();
     }
 
@@ -172,6 +183,7 @@ public class Main extends Application {
         root.getChildren().add(coverPane);
         root.getChildren().remove(hoverPane);
         root.getChildren().add(hoverPane);
+        root.getChildren().add(movePane);
     }
 
     private void initialize() {
@@ -246,25 +258,37 @@ public class Main extends Application {
 
     public void getMoves(Square s){
 
-        movePane = new StackPane();
-        movePane.setAlignment(Pos.TOP_LEFT);
+        movePane = new Pane();
+        movePane.setPrefSize(800,800);
+        movePane.setMinSize(800,800);
 
         Piece piece = s.piece;
         int rank = s.rank;
         int file = s.file;
         int lastMoved = piece.turnLastMoved;
 
-        if (piece.type == 'p'){
-            if (piece.colour == 'w'){
-                if (rank>1){
-                    if (square[rank-1][file].isEmpty()){
-                        System.out.println("square available 1 ahead");
-                        square[rank-1][file].toggleHighlight();
-
+        if (piece.type == 'p' || piece.type == 'P'){
+            int dir = 1;
+            if (piece.colour == 'w') dir = -1;
+            if ((rank>0 && piece.colour == 'w') || (rank < 7 && piece.colour == 'b')){
+                if (square[rank+dir][file].isEmpty()){
+                    square[rank+dir][file].toggleHighlight();
+                    StackPane temp = square[rank+dir][file].makeStackPane();
+                    temp.setTranslateX(100*file);
+                    temp.setTranslateY(100*(rank+dir));
+                    movePane.getChildren().add(temp);
+                }
+                if (((rank>1 && piece.colour == 'w') || (rank < 6 && piece.colour == 'b')) && (piece.turnLastMoved == -1 || piece.turnLastMoved == numMoves)){
+                    if (square[rank+2*dir][file].isEmpty()){
+                        square[rank+2*dir][file].toggleHighlight();
+                        StackPane temp = square[rank+2*dir][file].makeStackPane();
+                        temp.setTranslateX(100*file);
+                        temp.setTranslateY(100*(rank+2*dir));
+                        movePane.getChildren().add(temp);
                     }
                 }
-
             }
+
         }
 
     }
