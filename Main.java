@@ -39,7 +39,7 @@ public class Main extends Application {
         initialize();
         setEventHandlers();
         base.setCenter(root);
-        base.setStyle("-fx-background-color: #AAAAAA");
+        base.setStyle("-fx-background-color: #226622");
         base.setPadding(new Insets(15));
         updateStats();
         scene = new Scene(base);
@@ -128,7 +128,7 @@ public class Main extends Application {
         if ((oppInCheck(numMoves % 2 == 0 ? 'b' : 'w'))) {
             base.setStyle("-fx-background-color: #FF0000");
         } else {
-            base.setStyle("-fx-background-color: #AAAAAA");
+            base.setStyle("-fx-background-color: #226622");
         }
         System.out.printf("end2 white king: %d %d\n", wkRank, wkFile);
         System.out.printf("end2 black king: %d %d\n", bkRank, bkFile);
@@ -233,7 +233,6 @@ public class Main extends Application {
 
             //}
         }
-
         if (piece.type == 'b' || piece.type == 'B' || piece.type == 'q' || piece.type == 'Q') {
 
             int iter;
@@ -314,7 +313,11 @@ public class Main extends Application {
             checkAndHighlight(rank - 1, file - 1, s);
             checkAndHighlight(rank - 1, file, s);
             checkAndHighlight(rank - 1, file + 1, s);
-            checkAndHighlight(rank, file - 1, s);
+            if (checkAndHighlight(rank, file - 1, s)){
+//               if (piece.turnLastMoved==-1 && square[rank][0].piece.turnLastMoved == -1){
+//                   if(square[rank][1].isEmpty() && square[rank][2].isEmpty()))
+//               }
+            }
             checkAndHighlight(rank, file + 1, s);
             checkAndHighlight(rank + 1, file - 1, s);
             checkAndHighlight(rank + 1, file, s);
@@ -414,6 +417,8 @@ public class Main extends Application {
         ctp = numMoves % 2 == 0 ? "White To Play" : "Black To Play";
         numMovesPlayed = new Label(nmp);
         colourToPlay = new Label(ctp);
+        numMovesPlayed.setStyle("-fx-text-fill: #dddddd");
+        colourToPlay.setStyle("-fx-text-fill: #dddddd");
         numMovesPlayed.setFont(new Font(30));
         numMovesPlayed.setPadding(new Insets(15, 30, 0, 30));
         colourToPlay.setFont(new Font(30));

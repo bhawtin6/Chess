@@ -52,6 +52,7 @@ public class Piece {
                 break;
             default:
                 col = 6;//blank
+                turnLastMoved = -2;
         }
         icon = new ImageView(new Image("chesspieces.png"));
         icon.setPreserveRatio(true);
