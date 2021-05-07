@@ -5,6 +5,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
@@ -15,7 +16,7 @@ public class Main extends Application {
     TilePane piecesPane, board;
     BorderPane base;
     StackPane root;
-    Pane hoverPane; //coverPane;
+    Pane hoverPane, colourPane; //coverPane;
     Scene scene;
 
     Square hoverSquare;
@@ -24,12 +25,14 @@ public class Main extends Application {
     Square[][] square;
     Square lastSquare;
 
-    int numMoves, bkRank, bkFile, wkRank, wkFile; //counts all half moves
+    int numMoves; //counts all half moves
+    int bkRank, bkFile, wkRank, wkFile;//track pos of black and white kings
+    int lmRank, lmFile, lmsRank, lmsFile;//tracks squares highlighted
     boolean pieceInHand;
     HBox statsPanel;
     Label numMovesPlayed, colourToPlay;
     String nmp, ctp;
-
+    boolean checkOnBoard;
     String fen;
 
     public void start(Stage primaryStage) {
@@ -60,17 +63,10 @@ public class Main extends Application {
         } else {
             pickUpPiece(e);
         }
-
-    }
-
-    private void reset() {
-
     }
 
     private void placePiece(MouseEvent e) {
 
-        System.out.printf("start2 white king: %d %d\n", wkRank, wkFile);
-        System.out.printf("start2 black king: %d %d\n", bkRank, bkFile);
 
         int mouseX = (int) (e.getX());
         int mouseY = (int) (e.getY());
@@ -79,17 +75,17 @@ public class Main extends Application {
         int oldRank = lastSquare.rank;
         int oldFile = lastSquare.file;
 
-
         boolean valid = false;
         if (rank < 8 && file < 8 && rank > -1 && file > -1) {
             if (square[rank][file].highlighted) valid = true;
         }
-        //getMoves(lastSquare); //toggles highlights
+        //toggles highlights
         for (int i = 0; i < 8; i++) {
             for (int j = 0; j < 8; j++) {
                 square[i][j].setHighlight(false);
             }
         }
+
         if (valid) {
             square[lastSquare.rank][lastSquare.file] = new Square(rank, file, new Piece('x'), false);
             square[rank][file] = lastSquare;
@@ -103,10 +99,38 @@ public class Main extends Application {
             if (square[rank][file].piece.type == 'k') {
                 bkFile = file;
                 bkRank = rank;
+                if (file - oldFile == 2) {
+                    square[rank][5] = square[rank][7];
+                    square[rank][5].file = 5;
+                    square[rank][7] = new Square(rank, 7, new Piece('x'), false);
+                }
+                else if (file - oldFile == -2){
+                    square[rank][3] = square[rank][0];
+                    square[rank][3].file = 3;
+                    square[rank][3].updateColour();
+                    square[rank][0] = new Square(rank, 0, new Piece('x'), false);
+                }
             } else if (square[rank][file].piece.type == 'K') {
                 wkFile = file;
                 wkRank = rank;
+                if (file - oldFile == 2) {
+                    square[rank][5] = square[rank][7];
+                    square[rank][5].file = 5;
+                    square[rank][7] = new Square(rank, 7, new Piece('x'), false);
+                }
+                else if (file - oldFile == -2){
+                    square[rank][3] = square[rank][0];
+                    square[rank][3].file = 3;
+                    square[rank][3].updateColour();
+                    square[rank][0] = new Square(rank, 0, new Piece('x'), false);
+
+                }
+            } else if (square[rank][file].piece.type == 'p' && rank == 7){
+                square[rank][file] = new Square(rank, file, new Piece('q'), false);
+            } else if (square[rank][file].piece.type == 'P' && rank == 0){
+                square[rank][file] = new Square(rank, file, new Piece('Q'), false);
             }
+            updateLastMove(rank, file, oldRank, oldFile);
             numMoves++;
         }
 
@@ -126,28 +150,16 @@ public class Main extends Application {
         setEventHandlers();
         pieceInHand = !pieceInHand;
         if ((oppInCheck(numMoves % 2 == 0 ? 'b' : 'w'))) {
+            checkOnBoard = true;
             base.setStyle("-fx-background-color: #FF0000");
         } else {
+            checkOnBoard = false;
             base.setStyle("-fx-background-color: #226622");
         }
-        System.out.printf("end2 white king: %d %d\n", wkRank, wkFile);
-        System.out.printf("end2 black king: %d %d\n", bkRank, bkFile);
-    }
-
-    private void handleMouseDrag(MouseEvent e) {
-        if (hoverSquare == null) {
-            return;
-        }
-        hoverX = (int) e.getX() - 50;
-        hoverY = (int) e.getY() - 50;
-        hoverPane.setTranslateX(hoverX);
-        hoverPane.setTranslateY(hoverY);
     }
 
     private void pickUpPiece(MouseEvent e) {
-        System.out.printf("start1 white king: %d %d\n", wkRank, wkFile);
-        System.out.printf("start1 black king: %d %d\n", bkRank, bkFile);
-        int mouseX = (int) (e.getX());
+                int mouseX = (int) (e.getX());
         int mouseY = (int) (e.getY());
         int rank = mouseY / 100;
         int file = mouseX / 100;
@@ -162,17 +174,20 @@ public class Main extends Application {
         setEventHandlers();
         pieceInHand = !pieceInHand;
 
-        System.out.printf("end1 white king: %d %d\n", wkRank, wkFile);
-        System.out.printf("end1 black king: %d %d\n", bkRank, bkFile);
-
     }
 
     private void initialize() {
-        fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+        //fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
         //fen = "8/8/8/3bB3/8/8/8/8 u ";
+        fen = "n2r3k/4p3/8/8/3P4/8/8/3K3N w - - 0 1";
         square = parseFEN(fen); //rank-file
         numMoves = 0;
         pieceInHand = false;
+        checkOnBoard = false;
+        lmRank=-1;
+        lmFile=-1;
+        lmsRank=-1;
+        lmsFile=-1;
         redraw();
 
 
@@ -222,14 +237,14 @@ public class Main extends Application {
         if (piece.type == 'p' || piece.type == 'P') {
             int dir = 1;
             if (piece.colour == 'w') dir = -1;
-            //if ((rank>0 && piece.colour == 'w') || (rank < 7 && piece.colour == 'b')){
-            if (checkAndHighlight(rank + dir, file, s)) {
-                if (piece.turnLastMoved == -1) {
-                    checkAndHighlight(rank + 2 * dir, file, s);
-                }
+            checkAndHighlight(rank + dir, file, s);
+            if (piece.turnLastMoved == -1 && square[rank+dir][file].isEmpty()) {
+                checkAndHighlight(rank + 2 * dir, file, s);
             }
             checkAndHighlight(rank + dir, file + 1, s);
             checkAndHighlight(rank + dir, file - 1, s);
+
+
 
             //}
         }
@@ -314,11 +329,19 @@ public class Main extends Application {
             checkAndHighlight(rank - 1, file, s);
             checkAndHighlight(rank - 1, file + 1, s);
             if (checkAndHighlight(rank, file - 1, s)){
-//               if (piece.turnLastMoved==-1 && square[rank][0].piece.turnLastMoved == -1){
-//                   if(square[rank][1].isEmpty() && square[rank][2].isEmpty()))
-//               }
+               if (piece.turnLastMoved==-1 && square[rank][0].piece.turnLastMoved == -1 && !checkOnBoard){ //allows caslting
+                   if(square[rank][1].isEmpty() && square[rank][2].isEmpty()){
+                        checkAndHighlight(rank,file-2,s);
+                   }
+               }
             }
-            checkAndHighlight(rank, file + 1, s);
+            if (checkAndHighlight(rank, file + 1, s)){
+                if (piece.turnLastMoved==-1 && square[rank][7].piece.turnLastMoved == -1 && !checkOnBoard){
+                    if(square[rank][6].isEmpty()){
+                        checkAndHighlight(rank,file+2,s);
+                    }
+                }
+            }
             checkAndHighlight(rank + 1, file - 1, s);
             checkAndHighlight(rank + 1, file, s);
             checkAndHighlight(rank + 1, file + 1, s);
@@ -337,7 +360,8 @@ public class Main extends Application {
 
     }
 
-    public boolean checkAndHighlight(int r, int f, Square s) {
+    public boolean checkAndHighlight(int r, int f, Square s) { //r and f describe the target square, s is the square of the piece trying to be moved
+        boolean tryingEnPassent = false;
         boolean good = false;
         char myCol = s.piece.colour;
         char oppCol = myCol == 'w' ? 'b' : 'w';
@@ -345,17 +369,34 @@ public class Main extends Application {
         if (square[r][f].piece.colour == myCol) return false; //cant take own colour
         if (s.piece.type == 'p' || s.piece.type == 'P') { //pawns
             if (!square[r][f].isEmpty() && s.file == f) return false; //pawns cant take in the same file
-            if (s.file != f && square[r][f].isEmpty()) return false; //pawns cant move diag if empty
+
+            if (s.file != f && square[r][f].isEmpty()) {
+                if (myCol == 'w'){
+                    if (r == 2 && square[1][f].lastMovedStart && square[r+1][f].piece.type == 'p' && square[r+1][f].lastMoved){
+                        tryingEnPassent = true;
+                        System.out.println("en passent found");
+                    }
+                    else return false;
+                }
+                else {
+                    if (r == 5 && square[6][f].lastMovedStart && square[r-1][f].piece.type == 'P' && square[r-1][f].lastMoved){
+                        tryingEnPassent = true;
+                        System.out.println("en passent found");
+                    }
+                    else return false;
+                }
+
+            }
         }
 
         //this chunk determines if the move puts themselves in check
-        //does not currently work with en passent
         if ((numMoves % 2 == 0 && myCol == 'w') || (numMoves % 2 == 1 && myCol == 'b')) {
             Square sTaken = square[r][f]; //sTaken is the square that is temporarily being replaced
             int oldRank = s.rank; //so we know where to put the square back to later
             int oldFile = s.file;
 
-
+            //note that we dont need to do any special check for castling, since there is no situation
+            //where the castling rook is protecting from check before moving.
             if (s.piece.type == 'k' || s.piece.type == 'K'){
                 if (s.piece.type == 'K') {
                     wkRank = r;
@@ -388,6 +429,16 @@ public class Main extends Application {
 
             }
 
+            Square epPawnHolder=null;
+            int epphRank=0;
+            int epphFile=0;
+            if (tryingEnPassent){
+                epPawnHolder = square[s.rank][f];
+                epphRank = epPawnHolder.rank;
+                epphFile = epPawnHolder.file;
+                square[s.rank][f] = new Square(r, f, new Piece('x'),false);
+            }
+
             square[r][f] = s; //place the square at the prospective location
             square[oldRank][oldFile] = new Square(oldRank, oldFile, new Piece('x'), false); //replace old with temp blank
 
@@ -395,6 +446,9 @@ public class Main extends Application {
 
             square[oldRank][oldFile] = square[r][f];
             square[r][f] = sTaken;
+            if (tryingEnPassent){
+                square[epphRank][epphFile] = epPawnHolder;
+            }
 
 
 
@@ -427,8 +481,19 @@ public class Main extends Application {
         statsPanel.getChildren().addAll(numMovesPlayed, colourToPlay);
         statsPanel.setPrefHeight(30);
         statsPanel.setAlignment(Pos.CENTER);
+
+        colourPane = new Pane();
+        colourPane.setPrefSize(800,30);
+        colourPane.setBorder(new Border(new BorderStroke(Color.BLACK, BorderStrokeStyle.SOLID, null, null)));
+        if (numMoves % 2 == 0) {
+            colourPane.setStyle("-fx-background-color: #FFFFFF");
+        } else {
+            colourPane.setStyle("-fx-background-color: #000000");
+        }
+
         base.getChildren().removeAll();
         base.setBottom(statsPanel);
+        base.setTop(colourPane);
     }
 
     public boolean oppInCheck(char c) { //char represents colour that just moved
@@ -463,7 +528,7 @@ public class Main extends Application {
         makePieces();
         makeBoard();
         root = new StackPane();
-        root.setMaxSize(800, 800);
+        root.setMaxSize(802, 802);
         root.getChildren().add(board);
         root.getChildren().add(piecesPane);
         base.setCenter(root);
@@ -472,6 +537,7 @@ public class Main extends Application {
 
     public void makeBoard() {
         board = new TilePane();
+        board.setBorder(new Border(new BorderStroke(Color.BLACK, BorderStrokeStyle.SOLID, null, null)));
         board.setPrefColumns(8);
         board.setPrefRows(8);
         board.setPrefTileHeight(100);
@@ -498,6 +564,20 @@ public class Main extends Application {
             }
             System.out.println();
         }
+    }
+
+    public void updateLastMove(int newR, int newF, int startR, int startF){
+        if (lmsRank > -1 && lmsFile > -1)
+            square[lmsRank][lmsFile].setLastMovedStartTrue(false);
+        if (lmRank > -1 && lmFile > -1)
+            square[lmRank][lmFile].setLastMovedTrue(false);
+        lmsRank = startR;
+        lmsFile = startF;
+        lmRank = newR;
+        lmFile = newF;
+        square[lmsRank][lmsFile].setLastMovedStartTrue(true);
+        square[lmRank][lmFile].setLastMovedTrue(true);
+
     }
 
     public static void main(String[] args) {

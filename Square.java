@@ -1,7 +1,4 @@
-import javafx.scene.layout.Pane;
-import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.Rectangle;
 
 public class Square {
     public int rank;
@@ -9,6 +6,8 @@ public class Square {
     public Piece piece;
     public boolean selected;
     public boolean highlighted;
+    public boolean lastMoved;
+    public boolean lastMovedStart;
     Color colour; //backing colour of the square
 
     public Square(int r, int f){
@@ -17,6 +16,8 @@ public class Square {
         piece = new Piece('x');
         highlighted = false;
         selected = false;
+        lastMoved = false;
+        lastMovedStart = false;
         updateColour();
     }
     public Square(int r, int f, Piece p, boolean h){
@@ -25,15 +26,31 @@ public class Square {
         piece = p;
         highlighted = h;
         selected = false;
+        lastMoved = false;
+        lastMovedStart = false;
         updateColour();
     }
     public Color updateColour(){
-        if ((rank+file)%2 == 0 ) colour = Color.ALICEBLUE;
-        else colour = Color.CADETBLUE;
+        if (lastMoved || lastMovedStart){
+            colour = Color.DARKSEAGREEN;
+            if (lastMovedStart) colour = colour.desaturate().desaturate();
+        }
+        else {
+            if ((rank + file) % 2 == 0) colour = Color.ALICEBLUE;
+            else colour = Color.CADETBLUE;
+        }
         if (highlighted){
             colour = colour.darker().darker();
         }
         return this.colour;
+    }
+    public void setLastMovedTrue(boolean b){
+        lastMoved = b;
+        updateColour();
+    }
+    public void setLastMovedStartTrue(boolean b){
+        lastMovedStart = b;
+        updateColour();
     }
     public void toggleHighlight(){
         highlighted = !highlighted;
@@ -51,12 +68,5 @@ public class Square {
         return (this.piece.type == 'x');
     }
 
-    public StackPane makeStackPane(){
-        StackPane p = new StackPane();
-        p.setPrefSize(100,100);
-        Rectangle rect = new Rectangle(100,100,colour);
-        p.getChildren().add(rect);
-        p.getChildren().add(new Piece(this.piece.type).icon);
-        return p;
-    }
+
 }
