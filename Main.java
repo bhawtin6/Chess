@@ -330,6 +330,8 @@ public class Main extends Application {
             checkAndHighlight(rank + 2, file - 1, s);
             checkAndHighlight(rank + 2, file + 1, s);
         }
+        square[rank][file].toggleHighlight();
+
     }
 
     public boolean checkAndHighlight(int r, int f, Square s) {
@@ -361,7 +363,7 @@ public class Main extends Application {
                 }
 
                 Square temp = square[r][f];
-                square[oldRank][oldFile] = new Square(oldRank, oldFile, new Piece(s.piece.type), false);
+                square[oldRank][oldFile] = new Square(oldRank, oldFile, new Piece('x'), false);
                 square[r][f] = new Square(r, f, new Piece(s.piece.type), false);
 
                 if (!oppInCheck(oppCol)) good = true;
@@ -431,7 +433,7 @@ public class Main extends Application {
                 for (int j = 0; j < 8; j++) {
                     if (square[i][j].piece.colour == 'b') {
                         getMoves(square[i][j]);
-                        result = square[wkRank][wkFile].highlighted == true;
+                        result = square[wkRank][wkFile].highlighted;
                         getMoves(square[i][j]);
                         if (result) return true;
                     }
