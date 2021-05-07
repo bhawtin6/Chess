@@ -4,7 +4,7 @@ import javafx.geometry.Rectangle2D;
 import static java.lang.Character.isLowerCase;
 
 public class Piece {
-    char colour; //'b' or 'w'
+    char colour; //'b' or 'w' or 'x' for blank
     char type; //rnbqkpx
     int turnLastMoved; //last turn that this piece has moved
     ImageView icon;
@@ -13,7 +13,11 @@ public class Piece {
         turnLastMoved = -1;
         int row;
         int col;
-        if (isLowerCase(ch)){
+        if (ch == 'X' || ch == 'x'){
+            colour = 'x';
+            row = 1;
+        }
+        else if (isLowerCase(ch)){
             colour = 'b';
             row = 1;
         }
@@ -62,7 +66,7 @@ public class Piece {
         icon.setViewport(new Rectangle2D(col*132,row*132,132,132));
     }
     public String toString(){
-        return String.format("type: %c, colour: %c, turnLastMoved: %d\n",this.type, this.colour, this.turnLastMoved);
+        return String.format("type: %c, colour: %c, turnLastMoved: %d",this.type, this.colour, this.turnLastMoved);
     }
 
 

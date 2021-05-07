@@ -7,6 +7,7 @@ public class Square {
     public int rank;
     public int file;
     public Piece piece;
+    public boolean selected;
     public boolean highlighted;
     Color colour; //backing colour of the square
 
@@ -15,6 +16,7 @@ public class Square {
         file = f;
         piece = new Piece('x');
         highlighted = false;
+        selected = false;
         updateColour();
     }
     public Square(int r, int f, Piece p, boolean h){
@@ -22,6 +24,7 @@ public class Square {
         file = f;
         piece = p;
         highlighted = h;
+        selected = false;
         updateColour();
     }
     public Color updateColour(){

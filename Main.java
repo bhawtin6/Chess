@@ -15,7 +15,7 @@ public class Main extends Application {
     TilePane piecesPane, board;
     BorderPane base;
     StackPane root;
-    Pane hoverPane, movePane, coverPane;
+    Pane hoverPane; //coverPane;
     Scene scene;
 
     Square hoverSquare;
@@ -24,7 +24,8 @@ public class Main extends Application {
     Square[][] square;
     Square lastSquare;
 
-    int numMoves; //counts all half moves
+    int numMoves, bkRank, bkFile, wkRank, wkFile; //counts all half moves
+    boolean pieceInHand;
     HBox statsPanel;
     Label numMovesPlayed, colourToPlay;
     String nmp, ctp;
@@ -32,8 +33,15 @@ public class Main extends Application {
     String fen;
 
     public void start(Stage primaryStage){
+
+        base = new BorderPane();
+
         initialize();
         setEventHandlers();
+        base.setCenter(root);
+        base.setStyle("-fx-background-color: #AAAAAA");
+        base.setPadding(new Insets(15));
+        updateStats();
         scene = new Scene(base);
         primaryStage.setTitle("Chess");
         primaryStage.setResizable(false);
@@ -43,38 +51,56 @@ public class Main extends Application {
     }
 
     private void setEventHandlers() {
-        root.setOnMousePressed(this::handleMouseDown);
-        root.setOnMouseDragged(this::handleMouseDrag);
-        root.setOnMouseReleased(this::handleMouseUp);
-        root.setOnKeyPressed(e-> reset());
+        root.setOnMouseClicked(this::piecePickerUpper);
+//        root.setOnMousePressed(this::handleMouseDown);
+//        root.setOnMouseDragged(this::handleMouseDrag);
+//        root.setOnMouseReleased(this::handleMouseUp);
+//        root.setOnKeyPressed(e-> reset());
+
+    }
+
+    private void piecePickerUpper(MouseEvent e) {
+        if (pieceInHand){
+            placePiece(e);
+        }
+        else {
+            pickUpPiece(e);
+        }
+
     }
 
     private void reset() {
 
     }
 
-    private void handleMouseUp(MouseEvent e) {
+    private void placePiece(MouseEvent e) {
 
-        if (hoverSquare == null) return;
 
         int mouseX = (int) (e.getX());
         int mouseY = (int) (e.getY());
         int rank = mouseY / 100;
         int file = mouseX / 100;
+        int oldRank = lastSquare.rank;
+        int oldFile = lastSquare.file;
+
 
         boolean valid = false;
-        if (square[rank][file].highlighted) valid = true;
+        if (rank < 8 && file < 8 && rank > -1 && file > -1){
+            if (square[rank][file].highlighted) valid = true;
+        }
         getMoves(lastSquare); //toggles highlights
 
         if (valid){
             square[lastSquare.rank][lastSquare.file] = new Square(rank, file, new Piece('x'), false);
-            square[rank][file] = hoverSquare;
+
+            square[rank][file] = lastSquare;
         }
 
         if ((rank != lastSquare.rank || file != lastSquare.file) && valid) { //if the piece was moved, then
             square[rank][file].piece.turnLastMoved = numMoves;
             square[rank][file].rank = rank;
             square[rank][file].file = file;
+            square[oldRank][oldFile] = new Square(oldRank, oldFile, new Piece('x'), false);
             numMoves ++;
         }
 
@@ -89,10 +115,15 @@ public class Main extends Application {
             }
         }
 
-        root.getChildren().add(movePane);
-        root.getChildren().add(piecesPane);
+        redraw();
         updateStats();
-
+        setEventHandlers();
+        pieceInHand = !pieceInHand;
+        if ((oppInCheck(numMoves % 2 == 0 ? 'b' : 'w'))) {
+            base.setStyle("-fx-background-color: #FF0000");
+        } else {
+            base.setStyle("-fx-background-color: #AAAAAA");
+        }
     }
 
     private void handleMouseDrag(MouseEvent e) {
@@ -104,8 +135,7 @@ public class Main extends Application {
         hoverPane.setTranslateX(hoverX);
         hoverPane.setTranslateY(hoverY);
     }
-
-    private void handleMouseDown(MouseEvent e) {
+    private void pickUpPiece(MouseEvent e) {
         int mouseX = (int) (e.getX());
         int mouseY = (int) (e.getY());
         int rank = mouseY / 100;
@@ -117,35 +147,21 @@ public class Main extends Application {
         lastSquare = square[rank][file];
         getMoves(lastSquare);
 
-        hoverSquare = new Square(rank, file, new Piece(square[rank][file].piece.type),false);
-        hoverX = e.getX()-50;
-        hoverY = e.getY()-50;
-        hoverPane = new Pane();
-        hoverPane.setTranslateX(hoverX);
-        hoverPane.setTranslateY(hoverY);
-        hoverPane.getChildren().add(hoverSquare.piece.icon);
-        root.getChildren().remove(movePane);
-        root.getChildren().add(movePane);
-        root.getChildren().remove(hoverPane);
-        root.getChildren().add(hoverPane);
-
+        redraw();
+        setEventHandlers();
+        pieceInHand = !pieceInHand;
     }
-
     private void initialize() {
-        //fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-        fen = "8/8/8/3bB3/8/8/8/8 u ";
+        fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+        //fen = "8/8/8/3bB3/8/8/8/8 u ";
         square = parseFEN(fen); //rank-file
-        hoverSquare = null;
-        hoverPane = new Pane();
-        piecesPane = new TilePane();
-        coverPane = new Pane();
         numMoves = 0;
-
+        pieceInHand = false;
         redraw();
 
-    }
 
-    public static Square[][] parseFEN(String fen){
+    }
+    public Square[][] parseFEN(String fen){
         Square[][] square = new Square[8][8];
         int rank, file;
         String[] split1, split2;
@@ -166,6 +182,14 @@ public class Main extends Application {
                 }
                 else {
                     square[rank][file] = new Square(rank, file, new Piece(ch), false);
+                    if (ch == 'K'){
+                        wkRank = rank;
+                        wkFile = file;
+                    }
+                    else if (ch == 'k'){
+                        bkRank = rank;
+                        bkFile = file;
+                    }
                     file++;
                 }
                 fenMarker ++;
@@ -173,22 +197,13 @@ public class Main extends Application {
         }
         return square;
     }
-
     public void getMoves(Square s){
-
-        movePane = new Pane();
-        movePane.setPrefSize(800,800);
-        movePane.setMinSize(800,800);
 
         Piece piece = s.piece;
         int rank = s.rank;
         int file = s.file;
 
         square[rank][file].toggleHighlight();
-        Rectangle tempx = new Rectangle(100,100,square[rank][file].colour);
-        tempx.setTranslateX(100*file);
-        tempx.setTranslateY(100*(rank));
-        movePane.getChildren().add(tempx);
 
         if (piece.type == 'p' || piece.type == 'P'){
             int dir = 1;
@@ -196,44 +211,28 @@ public class Main extends Application {
             if ((rank>0 && piece.colour == 'w') || (rank < 7 && piece.colour == 'b')){
                 if (square[rank+dir][file].isEmpty()){
                     square[rank+dir][file].toggleHighlight();
-                    StackPane temp = square[rank+dir][file].makeStackPane();
-                    temp.setTranslateX(100*file);
-                    temp.setTranslateY(100*(rank+dir));
-                    movePane.getChildren().add(temp);
+                    if (((rank>1 && piece.colour == 'w') || (rank < 6 && piece.colour == 'b')) && (piece.turnLastMoved == -1 || piece.turnLastMoved == numMoves)){
+                        if (square[rank+2*dir][file].isEmpty()){
+                            square[rank+2*dir][file].toggleHighlight();
+                        }
+                    }
                 }
                 if (file < 7){
                     if (!square[rank+dir][file+1].isEmpty() && square[rank+dir][file+1].piece.colour!=square[rank][file].piece.colour){
                         square[rank+dir][file+1].toggleHighlight();
-                        StackPane temp = square[rank+dir][file+1].makeStackPane();
-                        temp.setTranslateX(100*(file+1));
-                        temp.setTranslateY(100*(rank+dir));
-                        movePane.getChildren().add(temp);
                     }
                 }
                 if (file > 0){
                     if (!square[rank+dir][file-1].isEmpty() && square[rank+dir][file-1].piece.colour!=square[rank][file].piece.colour){
                         square[rank+dir][file-1].toggleHighlight();
-                        StackPane temp = square[rank+dir][file-1].makeStackPane();
-                        temp.setTranslateX(100*(file-1));
-                        temp.setTranslateY(100*(rank+dir));
-                        movePane.getChildren().add(temp);
                     }
                 }
 
-                if (((rank>1 && piece.colour == 'w') || (rank < 6 && piece.colour == 'b')) && (piece.turnLastMoved == -1 || piece.turnLastMoved == numMoves)){
-                    if (square[rank+2*dir][file].isEmpty()){
-                        square[rank+2*dir][file].toggleHighlight();
-                        StackPane temp = square[rank+2*dir][file].makeStackPane();
-                        temp.setTranslateX(100*file);
-                        temp.setTranslateY(100*(rank+2*dir));
-                        movePane.getChildren().add(temp);
-                    }
-                }
+
             }
-
         }
 
-        else if (piece.type == 'b' || piece.type == 'B'){
+        if (piece.type == 'b' || piece.type == 'B' || piece.type == 'q' || piece.type == 'Q'){
 
             int iter;
             int rnk;
@@ -242,42 +241,27 @@ public class Main extends Application {
             iter = 1;
             rnk = rank - iter;
             fle = file - iter;
-            System.out.println("\n");
             while (rnk <8 && rnk > -1 && fle <8 && fle > -1){
-                System.out.printf("%d %d -> ", rnk, fle);
                 if (!square[rnk][fle].isEmpty() && square[rnk][fle].piece.colour == piece.colour) break;
-
                 square[rnk][fle].toggleHighlight();
-                StackPane temp = square[rnk][fle].makeStackPane();
-                temp.setTranslateX(100*fle);
-                temp.setTranslateY(100*rnk);
-                movePane.getChildren().add(temp);
-
                 if (!square[rnk][fle].isEmpty()) break;
 
                 iter ++;
                 rnk = rank - iter;
                 fle = file - iter;
-                System.out.printf("%d %d\n", rnk, fle);
             }
             iter = 1;
             rnk = rank - iter;
             fle = file + iter;
             while (rnk <8 && rnk > -1 && fle <8 && fle > -1){
-                System.out.printf("%d %d -> ", rnk, fle);
                 if (!square[rnk][fle].isEmpty() && square[rnk][fle].piece.colour == piece.colour) break;
 
                 square[rnk][fle].toggleHighlight();
-                StackPane temp = square[rnk][fle].makeStackPane();
-                temp.setTranslateX(100*fle);
-                temp.setTranslateY(100*rnk);
-                movePane.getChildren().add(temp);
 
                 if (!square[rnk][fle].isEmpty()) break;
                 iter ++;
                 rnk = rank - iter;
                 fle = file + iter;
-                System.out.printf("%d %d\n", rnk, fle);
             }
 
             iter = 1;
@@ -288,10 +272,6 @@ public class Main extends Application {
                 if (!square[rnk][fle].isEmpty() && square[rnk][fle].piece.colour == piece.colour) break;
 
                 square[rnk][fle].toggleHighlight();
-                StackPane temp = square[rnk][fle].makeStackPane();
-                temp.setTranslateX(100*fle);
-                temp.setTranslateY(100*rnk);
-                movePane.getChildren().add(temp);
 
                 if (!square[rnk][fle].isEmpty()) break;
                 iter ++;
@@ -306,19 +286,76 @@ public class Main extends Application {
                 if (!square[rnk][fle].isEmpty() && square[rnk][fle].piece.colour == piece.colour) break;
 
                 square[rnk][fle].toggleHighlight();
-                StackPane temp = square[rnk][fle].makeStackPane();
-                temp.setTranslateX(100*fle);
-                temp.setTranslateY(100*rnk);
-                movePane.getChildren().add(temp);
 
                 if (!square[rnk][fle].isEmpty()) break;
                 iter ++;
                 rnk = rank + iter;
                 fle = file - iter;
             }
-
         }
+        if (piece.type == 'r' || piece.type == 'R' || piece.type == 'q' || piece.type == 'Q'){
 
+            int rnk = rank+1;
+            int fle = file;
+            while (rnk <8){
+                if (!square[rnk][fle].isEmpty() && square[rnk][fle].piece.colour == piece.colour) break;
+                square[rnk][fle].toggleHighlight();
+                if (!square[rnk][fle].isEmpty()) break;
+                rnk++;
+            }
+
+            rnk = rank-1;
+            while (rnk > -1){
+                if (!square[rnk][fle].isEmpty() && square[rnk][fle].piece.colour == piece.colour) break;
+                square[rnk][fle].toggleHighlight();
+                if (!square[rnk][fle].isEmpty()) break;
+                rnk--;
+            }
+
+            rnk = rank;
+            fle = file-1;
+            while (fle > -1){
+                if (!square[rnk][fle].isEmpty() && square[rnk][fle].piece.colour == piece.colour) break;
+                square[rnk][fle].toggleHighlight();
+                if (!square[rnk][fle].isEmpty()) break;
+                fle--;
+            }
+
+            fle = file+1;
+            while (fle <8){
+                if (!square[rnk][fle].isEmpty() && square[rnk][fle].piece.colour == piece.colour) break;
+                square[rnk][fle].toggleHighlight();
+                if (!square[rnk][fle].isEmpty()) break;
+                fle++;
+            }
+        }
+        if (piece.type == 'k' || piece.type == 'K'){
+            checkAndHighlight(rank-1, file-1, piece.colour);
+            checkAndHighlight(rank-1, file, piece.colour);
+            checkAndHighlight(rank-1, file+1, piece.colour);
+            checkAndHighlight(rank, file-1, piece.colour);
+            checkAndHighlight(rank, file+1, piece.colour);
+            checkAndHighlight(rank+1, file-1, piece.colour);
+            checkAndHighlight(rank+1, file, piece.colour);
+            checkAndHighlight(rank+1, file+1, piece.colour);
+        }
+        if (piece.type == 'n' || piece.type == 'N'){
+            checkAndHighlight(rank-2, file-1, piece.colour);
+            checkAndHighlight(rank-2, file+1, piece.colour);
+            checkAndHighlight(rank-1, file-2, piece.colour);
+            checkAndHighlight(rank-1, file+2, piece.colour);
+            checkAndHighlight(rank+1, file+2, piece.colour);
+            checkAndHighlight(rank+1, file-2, piece.colour);
+            checkAndHighlight(rank+2, file-1, piece.colour);
+            checkAndHighlight(rank+2, file+1, piece.colour);
+        }
+    }
+    public boolean checkAndHighlight(int r, int f, char c){
+        if (r < 0 || r > 7 || f < 0 || f > 7) return false;
+        if (square[r][f].piece.colour == c) return false;
+
+        square[r][f].toggleHighlight();
+        return true;
     }
     public void updateStats(){
         statsPanel = new HBox();
@@ -338,19 +375,46 @@ public class Main extends Application {
         base.setBottom(statsPanel);
     }
 
+    public boolean oppInCheck(char c){ //char represents colour that just moved
+        boolean result;
+        if (c == 'b'){
+            for (int i = 0 ; i <8; i++){
+                for (int j = 0; j <8 ; j++){
+                    if (square[i][j].piece.colour == 'b'){
+                        getMoves(square[i][j]);
+                        result = square[wkRank][wkFile].highlighted == true;
+                        getMoves(square[i][j]);
+                        if (result) return true;
+                    }
+                }
+            }
+        }
+        else if (c == 'w'){
+            System.out.println("looking foor checks against the black king");
+            System.out.printf("black king located at %d, %d.\n", bkRank, bkFile);
+            for (int i = 0 ; i <8; i++){
+                for (int j = 0; j <8 ; j++){
+                    if (square[i][j].piece.colour == 'w'){
+                        getMoves(square[i][j]);
+                        result = square[bkRank][bkFile].highlighted;
+                        getMoves(square[i][j]);
+                        if (result) return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
     public void redraw(){
         makePieces();
         makeBoard();
         root = new StackPane();
         root.setMaxSize(800,800);
-        root.getChildren().addAll(board, piecesPane, hoverPane);
-
-        base = new BorderPane();
-        base.setStyle("-fx-background-color: #AAAAAA");
+        root.getChildren().add(board);
+        root.getChildren().add(piecesPane);
         base.setCenter(root);
-        base.setPadding(new Insets(15));
-
-        updateStats();
+        root.requestFocus();
     }
 
     public void makeBoard(){
@@ -367,14 +431,21 @@ public class Main extends Application {
     }
 
     public void makePieces(){
+        piecesPane = new TilePane();
         piecesPane.setPrefColumns(8);
         piecesPane.setPrefRows(8);
         piecesPane.setPrefTileHeight(100);
         piecesPane.setPrefTileWidth(100);
+
+        System.out.println();
         for (int i = 0 ; i <8; i++){
             for (int j = 0; j <8 ; j++){
+
                 piecesPane.getChildren().add(square[i][j].piece.icon);
+                System.out.print(square[i][j].piece.type + " ");
+
             }
+            System.out.println();
         }
     }
 
