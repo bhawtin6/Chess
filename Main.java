@@ -182,9 +182,9 @@ public class Main extends Application {
     }
 
     private void initialize() {
-        //fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+        fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
         //fen = "8/8/8/3bB3/8/8/8/8 u ";
-        fen = "n2r3k/4p3/8/8/3P4/8/8/3K3N w - - 0 1";
+        //fen = "n2r3k/4p3/8/8/3P4/8/8/3K3N w - - 0 1";
         square = parseFEN(fen); //rank-file
         numMoves = 0;
         pieceInHand = false;
