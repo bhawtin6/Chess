@@ -131,6 +131,11 @@ public class Main extends Application {
                 square[rank][file] = new Square(rank, file, new Piece('Q'), false);
             }
             updateLastMove(rank, file, oldRank, oldFile);
+            if (square[rank][file].piece.type == 'p'){
+                square[rank-1][file] = new Square(rank -1, file, new Piece('x'), false);
+            }else if (square[rank][file].piece.type == 'P'){
+                square[rank+1][file] = new Square(rank +1, file, new Piece('x'), false);
+            }
             numMoves++;
         }
 
