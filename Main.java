@@ -87,8 +87,9 @@ public class Main extends Application {
                 square[i][j].setHighlight(false);
             }
         }
-
+        boolean doingEP = false;
         if (valid) {
+            doingEP = (square[rank][file].isEmpty());
             square[lastSquare.rank][lastSquare.file] = new Square(rank, file, new Piece('x'), false);
             square[rank][file] = lastSquare;
         }
@@ -133,9 +134,9 @@ public class Main extends Application {
                 square[rank][file] = new Square(rank, file, new Piece('Q'), false);
             }
             updateLastMove(rank, file, oldRank, oldFile);
-            if (square[rank][file].piece.type == 'p'){
+            if (square[rank][file].piece.type == 'p' && doingEP){
                 square[rank-1][file] = new Square(rank -1, file, new Piece('x'), false);
-            }else if (square[rank][file].piece.type == 'P'){
+            }else if (square[rank][file].piece.type == 'P' && doingEP){
                 square[rank+1][file] = new Square(rank +1, file, new Piece('x'), false);
             }
             numMoves++;
