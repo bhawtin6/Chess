@@ -28,12 +28,14 @@ public class Main extends Application {
     int numMoves; //counts all half moves
     int bkRank, bkFile, wkRank, wkFile;//track pos of black and white kings
     int lmRank, lmFile, lmsRank, lmsFile;//tracks squares highlighted
+    int numLegalMoves;
     boolean pieceInHand;
     HBox statsPanel;
     Label numMovesPlayed, colourToPlay;
     String nmp, ctp;
     boolean checkOnBoard;
     String fen;
+
 
     public void start(Stage primaryStage) {
 
@@ -161,10 +163,85 @@ public class Main extends Application {
             checkOnBoard = false;
             base.setStyle("-fx-background-color: #226622");
         }
+        boolean flag = false;
+        char turn = numMoves % 2 == 0 ? 'b' : 'w';
+
+        for (int i = 0 ; i < 8; i++){
+            for (int j = 0 ; j < 8 ; j++){
+                if (square[i][j].piece.colour == turn) continue;
+                numLegalMoves =-1;
+                getMoves(square[i][j]);
+                for (int k = 0 ; k < 8; k++) {
+                    for (int l = 0; l < 8; l++) {
+                        if (square[k][l].highlighted) numLegalMoves++;
+                    }
+                }
+                getMoves(square[i][j]);
+                if (numLegalMoves > 0){
+                    flag = true;
+                    System.out.printf("legal move found for square %d, %d", i, j);
+                    break;
+                }
+            }
+            if (flag) break;
+        }
+        if (!flag){
+            base.setStyle("-fx-background-color: #4444FF");
+            if (checkOnBoard){
+                if (turn == 'b'){
+                    reset("Checkmate, Black Wins!");
+                    System.out.println("Checkmate, Black Wins!");
+                }
+
+                else {
+                    System.out.println("Checkmate, White Wins!");
+                    reset("Checkmate, White Wins!");
+                }
+            }
+            else reset("Stalemate.");
+        }
+
+    }
+
+    private void reset(String s) {
+        System.out.println(s);
+        statsPanel = new HBox();
+        nmp = s + " Click here to play again";
+        numMovesPlayed = new Label(nmp);
+        numMovesPlayed.setStyle("-fx-text-fill: #ffffff");
+        numMovesPlayed.setFont(new Font(30));
+        numMovesPlayed.setPadding(new Insets(15, 30, 0, 30));
+        statsPanel.getChildren().removeAll();
+        statsPanel.getChildren().addAll(numMovesPlayed);
+        statsPanel.setPrefHeight(30);
+        statsPanel.setAlignment(Pos.CENTER);
+        statsPanel.setOnMouseClicked(e -> {
+            base.getChildren().removeAll();
+            initialize();
+            setEventHandlers();
+            base.setCenter(root);
+//            base.setStyle("-fx-background-color: #226622");
+//            base.setPadding(new Insets(15));
+            updateStats();
+        });
+        statsPanel.requestFocus();
+        colourPane = new Pane();
+        colourPane.setPrefSize(800,30);
+        colourPane.setBorder(new Border(new BorderStroke(Color.BLACK, BorderStrokeStyle.SOLID, null, null)));
+        if (numMoves % 2 == 0) {
+            colourPane.setStyle("-fx-background-color: #000000");
+        } else {
+            colourPane.setStyle("-fx-background-color: #FFFFFF");
+        }
+
+        base.getChildren().removeAll();
+        base.setBottom(statsPanel);
+        base.setTop(colourPane);
+
     }
 
     private void pickUpPiece(MouseEvent e) {
-                int mouseX = (int) (e.getX());
+        int mouseX = (int) (e.getX());
         int mouseY = (int) (e.getY());
         int rank = mouseY / 100;
         int file = mouseX / 100;
@@ -182,9 +259,10 @@ public class Main extends Application {
     }
 
     private void initialize() {
-        fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-        //fen = "8/8/8/3bB3/8/8/8/8 u ";
-        //fen = "n2r3k/4p3/8/8/3P4/8/8/3K3N w - - 0 1";
+        fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; //normal game
+        //fen = "8/8/8/3bB3/8/8/8/8 u "; //used to test pieces moving
+        //fen = "n2r3k/4p3/8/8/3P4/8/8/3K3N w - - 0 1"; //en passent verification checking
+        fen = "k6K/r7/8/8/1Q6/3q4/8/6r1 w - - 0 1"; //stalemate checking
         square = parseFEN(fen); //rank-file
         numMoves = 0;
         pieceInHand = false;
@@ -455,8 +533,6 @@ public class Main extends Application {
                 square[epphRank][epphFile] = epPawnHolder;
             }
 
-
-
             if (good) {
                 square[r][f].toggleHighlight();
 
@@ -465,7 +541,6 @@ public class Main extends Application {
         }
 
         square[r][f].toggleHighlight();
-
         return true;
 
     }
